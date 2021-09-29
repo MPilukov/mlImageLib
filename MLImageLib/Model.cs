@@ -6,21 +6,21 @@ namespace MLImageLib
 {
     public class Model
     {
-        private MLContext _mlContext;
+        private readonly MLContext _mlContext;
         private ITransformer _model;
         private DataViewSchema _schema;
         private PredictionEngine<ImageData, ImagePrediction> _predictor;
 
-        private readonly string _inceptionTensorFlowModel; // путь к Inception 
-        private readonly string _savedModelPath; // путь для хранения модели
-        private readonly string _setsPath; // путь к сетам
+        private readonly string _inceptionTensorFlowModel; // inception path
+        private readonly string _savedModelPath; // path to store model
+        private readonly string _setsPath; // sets path
 
         /// <summary>
         /// Ctr Model
         /// </summary>
-        /// <param name="inceptionTensorFlowModel">Путь к Inception</param>
-        /// <param name="setsPath">Путь к сетам</param>
-        /// <param name="savedModelPath">Путь для хранения модели</param>
+        /// <param name="inceptionTensorFlowModel">Inception path</param>
+        /// <param name="setsPath">Sets path</param>
+        /// <param name="savedModelPath">Path to store model</param>
         public Model(string inceptionTensorFlowModel, string setsPath, string savedModelPath)
         {
             _mlContext = new MLContext();
@@ -32,15 +32,14 @@ namespace MLImageLib
 
         public void FitModel()
         {
-            var LogLoss = TrainModel(_setsPath, _inceptionTensorFlowModel);
-            //Console.WriteLine($"LogLoss is {LogLoss}");
+            TrainModel(_setsPath, _inceptionTensorFlowModel);
             SaveModel();
         }
 
         /// <summary>
-        /// Получить классификацию изображения
+        /// Get image classification
         /// </summary>
-        /// <param name="filePath">Путь к изображению</param>
+        /// <param name="filePath">Image path</param>
         /// <returns></returns>
         public (float[] score, string label) ClassifySingleImage(string filePath)
         {
@@ -50,7 +49,7 @@ namespace MLImageLib
             if (_predictor == null)
                 _predictor = _mlContext.Model.CreatePredictionEngine<ImageData, ImagePrediction>(_model);
 
-            var imageData = new ImageData()
+            var imageData = new ImageData
             {
                 ImagePath = filePath
             };
@@ -98,10 +97,10 @@ namespace MLImageLib
                 .Append(_mlContext.Transforms.Conversion.MapKeyToValue("PredictedLabelValue", "PredictedLabel"))
                 .AppendCacheCheckpoint(_mlContext);
 
-            var loadImages = ImageData.ReadData(setsPath);
-            var trainingData = _mlContext.Data.LoadFromEnumerable<ImageData>(loadImages.train);
+            var (train, test) = ImageData.ReadData(setsPath);
+            var trainingData = _mlContext.Data.LoadFromEnumerable<ImageData>(train);
             _model = pipeline.Fit(trainingData);
-            var testData = _mlContext.Data.LoadFromEnumerable<ImageData>(loadImages.test);
+            var testData = _mlContext.Data.LoadFromEnumerable<ImageData>(test);
             var predictions = _model.Transform(testData);
             var imagePredictionData =
                 _mlContext.Data.CreateEnumerable<ImagePrediction>(predictions, true).ToList();

@@ -13,23 +13,21 @@ namespace MLImageLib.Contracts
         [LoadColumn(1)]
         public string Label;
 
-        //метод, который я использую, чтобы забрать данные из папок и отмаркировать их
         public static (IEnumerable<ImageData> train, IEnumerable<ImageData> test) ReadData(string pathToFolder)
         {
-            List<ImageData> list = new List<ImageData>();
+            var list = new List<ImageData>();
             var directories = Directory.EnumerateDirectories(pathToFolder);
 
             foreach (var dir in directories)
             {
-                //var label = dir.Split(@"\").Last();
                 var label = (new DirectoryInfo(dir)).Name;
                 
                 foreach (var file in Directory.GetFiles(dir))
                 {
-                    list.Add(new ImageData()
+                    list.Add(new ImageData
                     {
                         ImagePath = file,
-                        Label = label
+                        Label = label,
                     });
                 }
             }
@@ -38,7 +36,6 @@ namespace MLImageLib.Contracts
             return GetSets(list);
         }
 
-        //Делим изображения на тестовую и основную выборки
         public static (IEnumerable<ImageData> train, IEnumerable<ImageData> test) GetSets(List<ImageData> data)
         {
             var trainCount = data.Count * 99 / 100;
